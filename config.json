@@ -1,0 +1,36 @@
+﻿{
+    "shape": {
+        "name": "Customers",
+        "keys":  ["ID"],
+        "properties": [
+            {
+                "name": "ID",
+                "type": "number"
+            },
+            {
+                "name": "FirstName",
+                "type": "string"
+            },
+            {
+                "name": "LastName",
+                "type": "string"
+            },
+            {
+                "name": "Address",
+                "type": "string"
+            },
+            {
+                "name": "City",
+                "type": "string"
+            },
+            {
+                "name": "State",
+                "type": "string"
+            },
+            {
+                "name": "Zip",
+                "type": "string"
+            }
+        ]
+    }
+}
