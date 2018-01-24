@@ -17,12 +17,22 @@ namespace PipelineExamples
     public class CsvPublisher : AbstractPublisher
     {
 
+        private IDictionary<string, object> _settings;
+        private IList<ShapeDefinition> _shapes;
+
+        public override InitializeResponse Init(InitializePublisherRequest request)
+        {
+            _settings = request.Settings;
+            return new InitializeResponse();
+        }
+
         public override TestConnectionResponse TestConnection(TestConnectionRequest request)
         {
-           
+
+            Logger.LogInfo("Testing Connection");
             try
             {
-                var input = (string)request.Settings["input"];
+                var input = (string)_settings["input"];
                 if (File.Exists(input))
                 {
                     using (File.OpenRead(input))
@@ -32,6 +42,7 @@ namespace PipelineExamples
             }
             catch (Exception ex)
             {
+                Logger.LogError("Could not test connection", ex);
                 return new TestConnectionResponse
                 {
                     Success = false,
@@ -44,12 +55,13 @@ namespace PipelineExamples
                 Success = true,
                 Message = "Connected to file successfully"
             };
-
         }
 
         public override DiscoverShapesResponse Shapes(DiscoverPublisherShapesRequest request)
         {
-            var configFile = (string)request.PublisherInstance.Settings["config"];
+            Logger.LogInfo("Discovering Shapes");
+            _settings = request.Settings;
+            var configFile = (string)_settings["config"];
             var configStr = File.ReadAllText(configFile);
             var config = JObject.Parse(configStr);
             var shapeObj = (JObject)config["shape"];
@@ -57,6 +69,7 @@ namespace PipelineExamples
             var shapes = new List<ShapeDefinition>();
             shapes.Add(shapeObj.ToObject<ShapeDefinition>());
 
+            _shapes = shapes;
             return new DiscoverShapesResponse
             {
                 Shapes = shapes
@@ -65,9 +78,12 @@ namespace PipelineExamples
 
         public override PublishResponse Publish(PublishRequest request, IDataTransport dataTransport)
         {
-            var input = (string)request.PublisherInstance.Settings["input"];
+            Logger.LogInfo("Calling Publish");
+            var input = (string)_settings["input"];
 
             var dataPoints = new List<DataPoint>();
+
+            var shape = _shapes.FirstOrDefault(s => s.Name.Equals(request.ShapeName, StringComparison.OrdinalIgnoreCase));
 
             using (var sr = new StreamReader(File.OpenRead(input)))
             using (var csvReader = new CsvReader(sr))
@@ -82,15 +98,15 @@ namespace PipelineExamples
                     {
                         TenantID = "mytenantid",
                         Action = DataPointAction.Upsert,
-                        Entity = request.Shape.Name,
+                        Entity = shape.Name,
                         Source = "CRM",
-                        KeyNames = request.Shape.Keys,
+                        KeyNames = shape.Keys,
                         Data = new Dictionary<string, object>()
                     };
 
-                    for (var i = 0; i < request.Shape.Properties.Count; i++)
+                    for (var i = 0; i < shape.Properties.Count; i++)
                     {
-                        var prop = request.Shape.Properties[i];
+                        var prop = shape.Properties[i];
 
                         if (prop.Type == "number")
                         {

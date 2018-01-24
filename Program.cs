@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Naveego.Pipeline;
+using Naveego.Pipeline.Logging;
 using Naveego.Pipeline.Protocol;
 using Naveego.Pipeline.Publishers;
 
@@ -28,7 +29,12 @@ namespace PipelineExamples
             };
 
             // Create our publisher instance
-            IPublisher publisher = new CsvPublisher();
+            CsvPublisher publisher = new CsvPublisher();
+
+            publisher.Logger = new CombinedLogger(
+                new ConsoleLogger(),
+                FileLogger.Create());
+
 
             // First let's test the connection
             var testResponse = publisher.TestConnection(
@@ -39,7 +45,7 @@ namespace PipelineExamples
 
             // Let's get the shapes 
             var shapeResponse = publisher.Shapes(
-                new DiscoverPublisherShapesRequest { PublisherInstance = publisherInstance }
+                new DiscoverPublisherShapesRequest { Settings = (Dictionary<string, object>)publisherInstance.Settings }
             );
 
             var shapeNames = string.Join(",", shapeResponse.Shapes.Select(s => s.Name));
@@ -48,9 +54,8 @@ namespace PipelineExamples
             // Let's get the data
             publisher.Publish(
                 new PublishRequest
-                {
-                    PublisherInstance = publisherInstance,
-                    Shape = shapeResponse.Shapes[0]
+                { 
+                    ShapeName = shapeResponse.Shapes[0].Name
                 },
                 new ConsoleDataTransport()
             );

@@ -21,6 +21,11 @@ namespace PipelineExamples
             _serializer.Converters.Add(new StringEnumConverter());
         }
 
+        public void Done()
+        {
+            
+        }
+
         public void Send(IList<DataPoint> dataPoints)
         {
             foreach (var dp in dataPoints)
