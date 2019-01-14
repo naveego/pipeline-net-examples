@@ -123,6 +123,7 @@ namespace PipelineExamples
             }
 
             dataTransport.Send(dataPoints);
+            dataTransport.Done();
 
             return new PublishResponse();
         }
